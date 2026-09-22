@@ -1,0 +1,52 @@
+# Extension configuration file.
+# Visit the "Extension configuration file (extension.toml)" section for more details:
+# https://docs.omniverse.nvidia.com/kit/docs/kit-manual/latest/guide/extensions_advanced.html
+#
+
+[core]
+reloadable = true
+order = 0
+
+[package]
+version = "0.2.0"
+title = "MQTT 3D Random Walk Animator & Fleet Manager"
+description = "Real-time 3D simulation animator subscribing to MQTT telemetry with Catmull-Rom smoothing and container fleet management"
+authors = ["Joey", "Pair Programming Agent"]
+keywords = ["mqtt", "animation", "smoothing"]
+changelog = "docs/CHANGELOG.md"
+readme = "docs/README.md"
+preview_image = "data/preview.png"
+icon = "data/icon.png"
+
+[dependencies]
+"omni.kit.uiapp" = {}
+"omni.kit.pipapi" = {}
+"omni.usd" = {}
+"omni.ui" = {}
+"omni.kit.menu.utils" = {}
+
+[python.pipapi]
+requirements = ["paho-mqtt", "requests"]
+use_online_index = true
+
+# define the Python module that the extension provides
+[[python.module]]
+name = "test.mqtt_animator"
+
+# define the Python module for tests
+[[python.module]]
+name = "test.mqtt_animator.tests"
+
+[settings]
+exts."test.mqtt_animator".timeout = 5
+
+# disable startup test
+[[test]]
+name = "startup"
+enabled = false
+
+[[test]]
+enabled = true
+dependencies = [
+    "omni.kit.test",
+]

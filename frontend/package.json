@@ -1,0 +1,19 @@
+{
+  "name": "random-walk-threejs-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "author": "Joey <joey@example.com>",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1",
+    "three": "^0.162.0"
+  },
+  "devDependencies": {
+    "vite": "^5.1.0"
+  }
+}

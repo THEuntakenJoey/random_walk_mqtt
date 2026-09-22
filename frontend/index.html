@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Distributed 3D Random Walk — Multi-Topic MQTT Fleet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- LEFT PANEL: Fleet & Container Orchestration -->
+    <div id="fleet-panel" class="glass-panel fleet-panel">
+      <div class="hud-header">
+        <div class="title-group">
+          <h2>Container Fleet</h2>
+          <span class="subtitle">Distributed MQTT Simulators</span>
+        </div>
+        <span id="active-device-badge" class="badge badge-device-count">0 Devices</span>
+      </div>
+
+      <!-- Spawn Container Action -->
+      <div class="spawn-action-row">
+        <button id="btn-spawn-device" class="btn-spawn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Spawn Device Container</span>
+        </button>
+      </div>
+
+      <!-- Active Device Cards List -->
+      <div id="device-list" class="device-list">
+        <div id="empty-state" class="empty-device-state">
+          <div class="empty-icon">🛰️</div>
+          <div class="empty-title">No Containers Running</div>
+          <div class="empty-desc">Click "Spawn Device Container" above to spin up an isolated worker container publishing to MQTT.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: HUD Telemetry & Global Controls -->
+    <div id="hud-panel" class="glass-panel hud-panel">
+      <div class="hud-header">
+        <div class="title-group">
+          <h2>Global Sync & HUD</h2>
+          <span class="subtitle">Eclipse Mosquitto (MQTT :9001)</span>
+        </div>
+        <div id="status-badge" class="badge badge-connecting">Connecting...</div>
+      </div>
+
+      <!-- Telemetry Cards Grid -->
+      <div class="telemetry-grid">
+        <div class="telemetry-card">
+          <span class="card-label">Active Devices</span>
+          <span id="metric-active-count" class="card-value highlight-cyan">0</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="card-label">Transport</span>
+          <span id="metric-transport" class="card-value">MQTT Push</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="card-label">Selected Walker</span>
+          <span id="metric-selected-device" class="card-value text-truncate">All / Free</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="card-label">Pipeline Delay</span>
+          <span id="metric-total-delay" class="card-value highlight-cyan">-- ms</span>
+        </div>
+      </div>
+
+      <!-- Latency Breakdown Section -->
+      <div class="latency-section">
+        <div class="latency-title">System Delays Breakdown</div>
+        <div class="latency-grid">
+          <div class="latency-row">
+            <span class="latency-label">MQTT Network Ping (RTT):</span>
+            <span id="delay-net-ping" class="latency-val">-- ms</span>
+          </div>
+          <div class="latency-row">
+            <span class="latency-label">Broker Ingestion Model:</span>
+            <span id="delay-db-poll" class="latency-val text-green">Push (0ms Polling)</span>
+          </div>
+          <div class="latency-row">
+            <span class="latency-label">Presence Protocol:</span>
+            <span class="latency-val text-green">Retained LWT (QoS 1)</span>
+          </div>
+          <div class="latency-row">
+            <span class="latency-label">Render Smoothing Buffer:</span>
+            <span id="delay-render-buffer" class="latency-val">-- ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Global Settings Controls -->
+      <div class="control-section">
+        <h3>Global Synchronization Settings</h3>
+
+        <!-- Interpolation Algorithm Mode Selector -->
+        <div class="control-group">
+          <label for="select-interpolation" class="label-row">
+            <span>Global Smoothing Algorithm:</span>
+          </label>
+          <select id="select-interpolation" class="hud-select">
+            <option value="v5_catmull_rom" selected>v5: Centripetal Catmull-Rom (History Buffer)</option>
+            <option value="v4_continuous_seamless">v4: Continuous Extrapolation (Zero Gap)</option>
+            <option value="v3_hermite_spline">v3: Hermite Spline (Filtered Keyframes)</option>
+            <option value="v2_simple_lerp">v2: Simple Exp LERP (Direct exponential smoothing)</option>
+            <option value="v1_raw_snap">v1: Raw 0-Lag Snap (No Interpolation)</option>
+          </select>
+          <span id="interpolation-desc" class="help-text">v5: Smooth Catmull-Rom Spline across all walkers</span>
+        </div>
+
+        <!-- Trail Toggle -->
+        <div class="control-group checkbox-group">
+          <label for="toggle-trail" class="switch-label">
+            <input type="checkbox" id="toggle-trail" checked />
+            <span class="slider-switch"></span>
+            <span class="switch-text">Show Trailing Paths</span>
+          </label>
+        </div>
+
+        <!-- Target Buffer Horizon Slider -->
+        <div class="control-group">
+          <div class="label-row">
+            <label for="slider-buffer-delay">Target Buffer Delay Offset:</label>
+            <span id="val-buffer-delay" class="freq-value">40 ms</span>
+          </div>
+          <input type="range" id="slider-buffer-delay" min="0" max="200" value="40" step="5" />
+        </div>
+
+        <!-- Frequency Quick Preset Buttons -->
+        <div class="preset-row">
+          <span class="preset-label">Buffer Presets:</span>
+          <button class="btn-preset" data-delay="0">0 ms (Snap)</button>
+          <button class="btn-preset" data-delay="20">20 ms (Ultra)</button>
+          <button class="btn-preset active" data-delay="40">40 ms (Balanced)</button>
+          <button class="btn-preset" data-delay="100">100 ms (Ultra Smooth)</button>
+        </div>
+      </div>
+
+      <!-- Info Footer -->
+      <div class="hud-footer">
+        <span class="footer-info">Area Bounds: 30x30 Box [-15, 15]</span>
+        <span id="fps-counter" class="footer-info">60 FPS</span>
+      </div>
+    </div>
+
+    <!-- Spawn Modal (Optional Quick Parameters) -->
+    <div id="spawn-modal" class="modal-overlay hidden">
+      <div class="modal-content glass-panel">
+        <div class="modal-header">
+          <h3>Launch Device Container</h3>
+          <button id="btn-close-modal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Device Name (Optional):</label>
+            <input type="text" id="input-device-name" placeholder="e.g. Rover Beta" class="hud-input" />
+          </div>
+          <div class="form-group">
+            <label>Initial Random Walk Model:</label>
+            <select id="input-spawn-model" class="hud-select">
+              <option value="target_waypoints" selected>Target Waypoints (Smooth Vehicle)</option>
+              <option value="edge_repulsion">Edge-Repulsion Cruise (Soft Avoidance)</option>
+              <option value="langevin">Langevin Brownian Dynamics</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Initial Write Frequency:</label>
+            <div class="slider-with-val">
+              <input type="range" id="input-spawn-hz" min="1" max="60" value="24" step="1" />
+              <span id="val-spawn-hz" class="freq-value">24 Hz</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Device & Waypoint Color:</label>
+            <div class="color-picker-row">
+              <input type="color" id="input-spawn-color" value="#38bdf8" class="color-picker-native" />
+              <div class="color-swatches" id="spawn-color-swatches">
+                <!-- Preset color swatches will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-cancel-spawn" class="btn-secondary">Cancel</button>
+          <button id="btn-confirm-spawn" class="btn-primary">
+            <span>Launch Container</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,67 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: rw-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -u '' || exit 0"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - rw_network
+
+  device-base:
+    build:
+      context: ./device
+      dockerfile: Dockerfile
+    image: random-walk-device:latest
+    container_name: rw-device-base-build
+    restart: "no"
+    entrypoint: ["echo", "Device worker image built and cached."]
+    networks:
+      - rw_network
+
+  collector:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rw-collector
+    stop_grace_period: 15s
+    environment:
+      MQTT_BROKER_HOST: mqtt
+      MQTT_BROKER_PORT: 1883
+      DOCKER_NETWORK: rw_network
+      DEVICE_IMAGE: random-walk-device:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      device-base:
+        condition: service_completed_successfully
+    networks:
+      - rw_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rw-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - collector
+      - mqtt
+    networks:
+      - rw_network
+
+networks:
+  rw_network:
+    name: rw_network
