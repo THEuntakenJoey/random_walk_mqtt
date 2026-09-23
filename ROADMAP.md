@@ -133,6 +133,21 @@ flowchart TD
 
 ---
 
+## 📍 Phase 5: Transport Latency Optimization & Protocol Modernization
+
+**Primary Objective**: Shrink wire-level transport latency ($\tau_{\text{transport}}$) to sub-millisecond levels, eliminate Head-of-Line blocking, and prevent Nagle queuing bubbles. Detailed analysis: [LATENCY_TRADEOFFS_AND_OPTIMIZATION.md](LATENCY_TRADEOFFS_AND_OPTIMIZATION.md).
+
+### 5.1 Zero-Nagle Low-Latency Sockets (`TCP_NODELAY`)
+- Enforce `TCP_NODELAY` across all device publishers, the Mosquitto broker (`set_tcp_nodelay true`), and the Nginx WebSocket reverse proxy (`tcp_nodelay on;`) to eliminate 40–200ms Delayed ACK queuing bubbles.
+
+### 5.2 Compact Binary Serialization
+- Migrate high-frequency telemetry from ~240-byte UTF-8 JSON to 24-byte packed binary structs (IEEE 754 float32 / Protobuf), cutting payload size by 90% and eliminating V8 garbage collection frame drops.
+
+### 5.3 QUIC & WebTransport Migration (Eliminate Head-of-Line Blocking)
+- Bypass TCP Head-of-Line blocking over lossy networks (WiFi/5G) using QUIC unreliable datagrams (MQTT over QUIC / WebTransport), ensuring stale dropped frames do not stall delivery of fresh coordinates.
+
+---
+
 ## 📊 Milestone Summary Table
 
 | Milestone | Target Feature | Core Tech / Component | Expected Outcome |
@@ -141,3 +156,4 @@ flowchart TD
 | **Phase 2** | Multi-Instance Demux & Sequencer | PostgreSQL `seq_id` + FastAPI Demuxer | Scalable visualization of 50+ concurrent instances |
 | **Phase 3** | Entity Lifecycle & Holographic FX | Three.js Custom Shader + State Machine | Smooth handling of crashes & disconnections |
 | **Phase 4** | HUD Chaos Injector & Stress Testing | Vite HUD Panel + Synthetic Chaos Engine | Verification under simulated 50% packet loss & jitter |
+| **Phase 5** | Transport Latency & Protocol Modernization | `TCP_NODELAY` + Binary Structs + QUIC / WebTransport | Sub-ms wire latency, 90% payload shrink, zero HoL stalls |

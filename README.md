@@ -97,6 +97,7 @@ flowchart TD
   - **`v3: Hermite Spline`**: Filtered unique keyframe interpolation.
   - **`v2: Simple Exp LERP`**: Exponential moving average.
   - **`v1: Raw 0-Lag Snap`**: Unfiltered instantaneous state snapping.
+  - *Detailed Analysis*: See [LATENCY_TRADEOFFS_AND_OPTIMIZATION.md](file:///home/km/agy2-projects/random_walk_mqtt_ov/LATENCY_TRADEOFFS_AND_OPTIMIZATION.md) and [INTERPOLATION_BENCHMARK.md](file:///home/km/agy2-projects/random_walk_mqtt_ov/INTERPOLATION_BENCHMARK.md) for full kinematic trade-off matrices and benchmark evaluations.
 - **Target Buffer Delay Offset**: Adjustable slider (0 to 200 ms) with quick presets (0ms, 20ms, 40ms, 100ms).
 - **Trailing Paths**: Global toggle to display or hide motion history trails.
 
@@ -231,6 +232,7 @@ random_walk_mqtt_ov/
 │       ├── test/            # Python extension package (Extension, StageManager, Interpolator, UIBuilder)
 │       └── docs/            # Extension usage guides and changelog
 ├── INTERPOLATION_BENCHMARK.md # Empirical benchmark matrix and interpolation evaluation
+├── LATENCY_TRADEOFFS_AND_OPTIMIZATION.md # Kinematic trade-offs & transport latency optimizations (QUIC, TCP_NODELAY, binary)
 ├── ROADMAP.md               # System roadmap for distributed scaling, resilience & Omniverse
 └── README.md                # Project documentation
 ```
